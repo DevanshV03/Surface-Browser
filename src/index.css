@@ -1,0 +1,407 @@
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Makes width/height calculations easier - includes padding/border in size */
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden; /* Prevents scrollbars on main window */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: #0a0a0a;
+  color: #ffffff;
+  user-select: none; /* Prevents text selection for more app-like feel */
+}
+
+/* Main browser container */
+#browser-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Full viewport height */
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+}
+
+/* ===== CUSTOM TITLE BAR ===== */
+#title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.05); /* Semi-transparent overlay */
+  backdrop-filter: blur(20px); /* Glassmorphism effect */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 16px;
+  position: relative;
+  z-index: 1000; 
+}
+
+/* Draggable region - allows window movement */
+.title-drag-region {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  -webkit-app-region: drag; /* Electron-specific: makes this area draggable */
+}
+
+/* Browser identity styling */
+.browser-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.logo {
+  font-size: 16px;
+}
+
+/* Window control buttons */
+.window-controls {
+  display: flex;
+  gap: 4px;
+  -webkit-app-region: no-drag; /* Prevents dragging on control buttons */
+}
+
+.control-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease; /* Smooth hover animations */
+  position: relative;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  transform: scale(1.05); /* Slight grow effect */
+}
+
+/* Specific hover colors for different buttons */
+.close-btn:hover {
+  background: #ff5555;
+  color: white;
+}
+
+.minimize-btn:hover {
+  background: #ffb86c;
+  color: white;
+}
+
+.maximize-btn:hover {
+  background: #50fa7b;
+  color: white;
+}
+
+/* ===== NAVIGATION BAR ===== */
+#navigation-bar {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0 16px;
+  gap: 12px;
+}
+
+/* Navigation button groups */
+.nav-controls-left, .nav-controls-right {
+  display: flex;
+  gap: 8px;
+}
+
+/* Navigation buttons */
+.nav-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth easing curve */
+  position: relative;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px); /* Subtle lift effect */
+}
+
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* URL bar container */
+.url-bar-container {
+  flex: 1; /* Takes up remaining space between nav controls */
+  max-width: 600px;
+  margin: 0 16px;
+}
+
+.url-bar {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0 16px;
+  height: 30px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden; /* For fancy focus animation */
+}
+
+.url-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.url-bar:focus-within {
+  border-color: #6c63ff;
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2); /* Focus glow */
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.url-bar:focus-within::before {
+  left: 100%; /* Sliding shine effect */
+}
+
+/* Security icon */
+.security-icon {
+  display: flex;
+  align-items: center;
+  margin-right: 8px;
+  color: #50fa7b; /* Green for secure */
+}
+
+/* URL input field */
+#url-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+}
+
+#url-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* URL actions (bookmark button, etc.) */
+.url-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.url-action-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.url-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ===== MAIN CONTENT AREA ===== */
+#content-area {
+  flex: 1; /* Takes up remaining space */
+  position: relative;
+  background: #0a0a0a;
+  overflow: hidden;
+}
+
+/* Welcome screen */
+#welcome-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: radial-gradient(circle at 30% 40%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 40% 80%, rgba(120, 219, 226, 0.1) 0%, transparent 50%);
+}
+
+#welcome-screen.hidden {
+  display: none;
+}
+
+.welcome-content {
+  text-align: center;
+  max-width: 600px;
+  padding: 40px;
+}
+
+.welcome-header h1 {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #6c63ff, #ff6b6b, #4ecdc4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text; /* Modern gradient text effect */
+}
+
+.welcome-header p {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 40px;
+}
+
+/* Quick links grid */
+.quick-links {
+  margin-top: 32px;
+}
+
+.quick-links h3 {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 20px;
+}
+
+.quick-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Responsive grid */
+  gap: 16px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Quick link buttons */
+.quick-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  color: inherit;
+}
+
+.quick-link:hover {
+  transform: translateY(-4px) scale(1.02); /* Lift and grow effect */
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.quick-link-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.quick-link-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Web container (hidden initially) */
+#web-container {
+  height: 100%;
+  background: white;
+}
+
+#web-container.hidden {
+  display: none;
+}
+
+/* Loading bar */
+.loading-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  z-index: 1000;
+}
+
+.loading-bar.hidden {
+  display: none;
+}
+
+.loading-progress {
+  height: 100%;
+  background: linear-gradient(90deg, #6c63ff, #ff6b6b);
+  width: 0%;
+  transition: width 0.3s ease;
+  border-radius: 0 3px 3px 0;
+}
+
+/* Utility classes */
+.hidden {
+  display: none !important;
+}
+
+.active {
+  display: block;
+}
+
+/* Scrollbar styling for any scrollable content */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.welcome-content {
+  animation: fadeIn 0.6s ease-out;
+}
