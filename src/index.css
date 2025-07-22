@@ -2,24 +2,31 @@
 * {
   margin: 0;
   padding: 0;
-  box-sizing: border-box; /* Makes width/height calculations easier - includes padding/border in size */
+  box-sizing: border-box;
 }
 
 html, body {
   height: 100%;
-  overflow: hidden; /* Prevents scrollbars on main window */
+  overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   background: #0a0a0a;
   color: #ffffff;
-  user-select: none; /* Prevents text selection for more app-like feel */
+  user-select: none;
 }
 
 /* Main browser container */
 #browser-container {
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Full viewport height */
-  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+  height: 100vh;
+  background: linear-gradient(
+  135deg, 
+  rgba(15, 15, 35, 0.8) 0%, 
+  rgba(26, 26, 46, 0.8) 50%, 
+  rgba(22, 33, 62, 0.8) 100%
+);
+backdrop-filter: blur(10px);
+  
 }
 
 /* ===== CUSTOM TITLE BAR ===== */
@@ -28,20 +35,19 @@ html, body {
   justify-content: space-between;
   align-items: center;
   height: 42px;
-  background: rgba(255, 255, 255, 0.05); /* Semi-transparent overlay */
-  backdrop-filter: blur(20px); /* Glassmorphism effect */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0);
+  backdrop-filter: blur(20px);
   padding: 0 16px;
   position: relative;
-  z-index: 1000; 
+  z-index: 1000;
 }
 
-/* Draggable region - allows window movement */
+/* Draggable region */
 .title-drag-region {
   display: flex;
   align-items: center;
   height: 100%;
-  -webkit-app-region: drag; /* Electron-specific: makes this area draggable */
+  -webkit-app-region: drag;
 }
 
 /* Browser identity styling */
@@ -62,7 +68,7 @@ html, body {
 .window-controls {
   display: flex;
   gap: 4px;
-  -webkit-app-region: no-drag; /* Prevents dragging on control buttons */
+  -webkit-app-region: no-drag;
 }
 
 .control-btn {
@@ -76,17 +82,16 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease; /* Smooth hover animations */
+  transition: all 0.2s ease;
   position: relative;
 }
 
 .control-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.9);
-  transform: scale(1.05); /* Slight grow effect */
+  transform: scale(1.05);
 }
 
-/* Specific hover colors for different buttons */
 .close-btn:hover {
   background: #ff5555;
   color: white;
@@ -102,16 +107,18 @@ html, body {
   color: white;
 }
 
-/* ===== NAVIGATION BAR ===== */
+/* ===== TOP NAVIGATION BAR ===== */
 #navigation-bar {
   display: flex;
   align-items: center;
-  height: 48px;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  justify-content: space-between;
+  height: 42px;
+  background: transparent;
+  flex: 1;
   padding: 0 16px;
   gap: 12px;
+  position: relative;
+  z-index: 999;
 }
 
 /* Navigation button groups */
@@ -132,14 +139,14 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth easing curve */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
 
 .nav-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.9);
-  transform: translateY(-1px); /* Subtle lift effect */
+  transform: translateY(-1px);
 }
 
 .nav-btn:disabled {
@@ -149,7 +156,7 @@ html, body {
 
 /* URL bar container */
 .url-bar-container {
-  flex: 1; /* Takes up remaining space between nav controls */
+  flex: 1;
   max-width: 600px;
   margin: 0 16px;
 }
@@ -165,7 +172,7 @@ html, body {
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
   position: relative;
-  overflow: hidden; /* For fancy focus animation */
+  overflow: hidden;
 }
 
 .url-bar::before {
@@ -181,12 +188,12 @@ html, body {
 
 .url-bar:focus-within {
   border-color: #6c63ff;
-  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2); /* Focus glow */
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.2);
   background: rgba(255, 255, 255, 0.12);
 }
 
 .url-bar:focus-within::before {
-  left: 100%; /* Sliding shine effect */
+  left: 100%;
 }
 
 /* Security icon */
@@ -194,7 +201,7 @@ html, body {
   display: flex;
   align-items: center;
   margin-right: 8px;
-  color: #50fa7b; /* Green for secure */
+  color: #50fa7b;
 }
 
 /* URL input field */
@@ -212,7 +219,7 @@ html, body {
   color: rgba(255, 255, 255, 0.4);
 }
 
-/* URL actions (bookmark button, etc.) */
+/* URL actions */
 .url-actions {
   display: flex;
   gap: 4px;
@@ -238,23 +245,153 @@ html, body {
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* ===== MAIN CONTENT AREA ===== */
-#content-area {
-  flex: 1; /* Takes up remaining space */
-  position: relative;
-  background: #0a0a0a;
+/* ===== MAIN LAYOUT WITH SIDEBAR ===== */
+#browser-main-layout {
+  display: flex;
+  flex: 1;
+  height: calc(100vh - 90px); /* Account for title bar + nav bar */
   overflow: hidden;
+  padding: 0px;
+  background:linear-gradient(
+  135deg, 
+  rgba(15, 15, 35, 0.8) 0%, 
+  rgba(26, 26, 46, 0.8) 50%, 
+  rgba(22, 33, 62, 0.8) 100%
+);
+backdrop-filter: blur(10px);
+  
 }
 
-/* Welcome screen */
-#welcome-screen {
+/* ===== ZEN-STYLE TAB SIDEBAR ===== */
+#tab-sidebar-container {
+  width: 60px;
+  background: rgba(255, 255, 255, 0);
+  backdrop-filter: blur(20px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-sidebar {
+  display: flex;
+  flex-direction: column;
+  margin-left: 0px;
+  padding: 8px;
+  padding-top: 15px;
+  gap: 8px;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Tab boxes (square containers with website icons) */
+.tab-box {
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  background: radial-gradient(circle at 30% 40%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
-              radial-gradient(circle at 40% 80%, rgba(120, 219, 226, 0.1) 0%, transparent 50%);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  position: relative;
+}
+
+.tab-box:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.tab-box.active {
+  background: rgba(108, 99, 255, 0.2);
+  border-color: rgba(108, 99, 255, 0.4);
+  box-shadow: 0 0 12px rgba(108, 99, 255, 0.3);
+}
+
+.tab-box.active:hover {
+  background: rgba(108, 99, 255, 0.25);
+}
+
+/* Website favicon in tab */
+.tab-favicon {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Add tab button */
+.add-tab-box {
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: auto; /* Push to bottom */
+}
+
+.add-tab-box:hover {
+  background: rgba(108, 99, 255, 0.1);
+  border-color: rgba(108, 99, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.add-tab-icon {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.add-tab-box:hover .add-tab-icon {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ===== FLOATING CONTENT AREA ===== */
+#content-area {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 10px;
+  box-shadow: #1a1a2e;
+}
+
+/* Floating welcome screen */
+#welcome-screen {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+
+#welcome-screen::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 30% 40%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(120, 219, 226, 0.1) 0%, transparent 50%);
+  z-index: -1;
 }
 
 #welcome-screen.hidden {
@@ -265,6 +402,8 @@ html, body {
   text-align: center;
   max-width: 600px;
   padding: 40px;
+  position: relative;
+  z-index: 1;
 }
 
 .welcome-header h1 {
@@ -274,7 +413,7 @@ html, body {
   background: linear-gradient(135deg, #6c63ff, #ff6b6b, #4ecdc4);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text; /* Modern gradient text effect */
+  background-clip: text;
 }
 
 .welcome-header p {
@@ -296,20 +435,19 @@ html, body {
 
 .quick-links-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Responsive grid */
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 16px;
   max-width: 500px;
   margin: 0 auto;
 }
 
-/* Quick link buttons */
 .quick-link {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 20px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   cursor: pointer;
@@ -319,8 +457,8 @@ html, body {
 }
 
 .quick-link:hover {
-  transform: translateY(-4px) scale(1.02); /* Lift and grow effect */
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   border-color: rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.08);
 }
@@ -336,10 +474,16 @@ html, body {
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* Web container (hidden initially) */
+/* Floating webview container */
 #web-container {
-  height: 100%;
+  flex: 1;
   background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  position: relative;
 }
 
 #web-container.hidden {
@@ -355,6 +499,7 @@ html, body {
   height: 3px;
   background: rgba(255, 255, 255, 0.1);
   z-index: 1000;
+  border-radius: 12px 12px 0 0;
 }
 
 .loading-bar.hidden {
@@ -366,7 +511,7 @@ html, body {
   background: linear-gradient(90deg, #6c63ff, #ff6b6b);
   width: 0%;
   transition: width 0.3s ease;
-  border-radius: 0 3px 3px 0;
+  border-radius: 12px 0 0 0;
 }
 
 /* Utility classes */
@@ -378,18 +523,19 @@ html, body {
   display: block;
 }
 
-/* Scrollbar styling for any scrollable content */
+/* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -404,4 +550,28 @@ html, body {
 
 .welcome-content {
   animation: fadeIn 0.6s ease-out;
+}
+
+/* Tab hover tooltip effect */
+.tab-box::after {
+  content: attr(title);
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 8px;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 1001;
+}
+
+.tab-box:hover::after {
+  opacity: 1;
 }
