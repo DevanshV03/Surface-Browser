@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: https:; script-src 'self' 'unsafe-inline';">
+  <title>Surface Browser</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <!-- Main browser container -->
+  <div id="browser-container">
+    
+    <!-- Title Bar -->
+    <div id="title-bar">
+      <div class="title-drag-region">
+        <div class="browser-identity">
+          <p class="logo">🌊</p>
+          <p class="name">Surface</p>
+        </div>
+      </div>
+      <!-- Top Navigation Bar (like Zen) -->
+    <div id="navigation-bar">
+      <!-- Left nav controls -->
+      <div class="nav-controls-left">
+        <button id="back-btn" class="nav-btn" disabled title="Go back">
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            <path d="M10 2l-6 6 6 6" stroke="currentColor" stroke-width="2" fill="none"/>
+          </svg>
+        </button>
+        <button id="forward-btn" class="nav-btn" disabled title="Go forward">
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            <path d="M6 2l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none"/>
+          </svg>
+        </button>
+        <button id="reload-btn" class="nav-btn" title="Reload page">
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            <path d="M8 2v4l3-3-3-3zM8 14v-4l-3 3 3 3z" stroke="currentColor" stroke-width="1" fill="none"/>
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1" fill="none"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- URL bar -->
+      <div class="url-bar-container">
+        <div class="url-bar">
+          <div class="security-icon" id="security-icon">
+            <svg width="14" height="14" viewBox="0 0 14 14">
+              <path d="M7 1L3 3v4c0 2.5 2.5 5 4 6 1.5-1 4-3.5 4-6V3L7 1z" stroke="currentColor" stroke-width="1" fill="none"/>
+            </svg>
+          </div>
+          <input 
+            type="text" 
+            id="url-input" 
+            placeholder="Search or enter address..."
+            spellcheck="false"
+            autocomplete="off"
+          >
+          <div class="url-actions">
+            <button id="bookmark-btn" class="url-action-btn" title="Bookmark this page">
+              <svg width="14" height="14" viewBox="0 0 14 14">
+                <path d="M3 2h8v10l-4-3-4 3V2z" stroke="currentColor" stroke-width="1" fill="none"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right controls -->
+      <div class="nav-controls-right">
+        <button id="menu-btn" class="nav-btn" title="Menu">
+          <svg width="16" height="16" viewBox="0 0 16 16">
+            <circle cx="3" cy="8" r="1" fill="currentColor"/>
+            <circle cx="8" cy="8" r="1" fill="currentColor"/>
+            <circle cx="13" cy="8" r="1" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+      <!-- Window controls -->
+      <div class="window-controls">
+        <button id="minimize-btn" class="control-btn minimize-btn">
+          <svg width="12" height="12" viewBox="0 0 12 12">
+            <path d="M0 6h12" stroke="currentColor" stroke-width="1"/>
+          </svg>
+        </button>
+        <button id="maximize-btn" class="control-btn maximize-btn">
+          <svg width="12" height="12" viewBox="0 0 12 12">
+            <rect x="1" y="1" width="10" height="10" stroke="currentColor" stroke-width="1" fill="none"/>
+          </svg>
+        </button>
+        <button id="close-btn" class="control-btn close-btn">
+          <svg width="12" height="12" viewBox="0 0 12 12">
+            <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    
+
+    <!-- Main Layout: Sidebar + Content -->
+    <div id="browser-main-layout">
+
+      <!-- Tab Sidebar (just website icons) -->
+      <div id="tab-sidebar-container">
+       <div class="tab-sidebar" id="react-tab-mount"></div>
+      </div>
+      
+      <!-- Floating Content Area -->
+      <div id="content-area">
+        
+        <!-- Welcome screen -->
+        <div id="welcome-screen" class="active">
+          <div class="welcome-content">
+            <div class="welcome-header">
+              <h1>🌊 Surface Browser</h1>
+              <p>Fast, modern, and built for you</p>
+            </div>
+            <!--This needs to be fixed, not visible as of now. User is directed to google.com directly-->
+            <div class="quick-links">
+              <div class="quick-link-category">
+                <h3>Quick Actions</h3>
+                <div class="quick-links-grid">
+                  <button class="quick-link" data-action="bookmarks">
+                    <span class="quick-link-icon">📚</span>
+                    <span class="quick-link-text">Bookmarks</span>
+                  </button>
+                  <button class="quick-link" data-action="history">
+                    <span class="quick-link-icon">🕰</span>
+                    <span class="quick-link-text">History</span>
+                  </button>
+                  <button class="quick-link" data-action="settings">
+                    <span class="quick-link-icon">⚙️</span>
+                    <span class="quick-link-text">Settings</span>
+                  </button>
+                  <button class="quick-link" data-action="downloads">
+                    <span class="quick-link-icon">📥</span>
+                    <span class="quick-link-text">Downloads</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating webview -->
+        <div id="web-container" class="hidden"></div>
+        
+      </div>
+      
+    </div>
+
+    <!-- Loading bar -->
+    <div id="loading-bar" class="loading-bar hidden">
+      <div class="loading-progress"></div>
+    </div>
+    
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+<link rel="stylesheet" href="./src/style.css">
+</body>
+</html>

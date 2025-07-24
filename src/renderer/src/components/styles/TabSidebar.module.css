@@ -1,0 +1,7 @@
+.tabSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  padding: 0; /* Reset padding since container handles it */
+}
