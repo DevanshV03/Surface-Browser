@@ -19,7 +19,17 @@ function TabItem({ tab, isActive, onClose, onSwitch }){
             onClick={handleClick}
         >
             <div className={styles.tabFavicon}>
-                {tab.favicon}
+                {tab.favicon && (tab.favicon.startsWith('https://') || tab.favicon.startsWith('http://'))?(
+                    <img
+                    src = {tab.favicon}
+                    alt = 'favicon'
+                    onError={(e) => {
+                        e.target.outerHTML = '<span>🌐</span>';
+                    }}/>
+                
+                ): (
+                    tab.favicon || '🌐'
+                )}
             </div>
             <button
                 className={styles.closeBtn}

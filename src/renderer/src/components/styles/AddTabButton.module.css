@@ -1,6 +1,6 @@
 .addTabBox {
   width: 44px;
-  height: 44px;
+  height: 35px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px dashed rgba(255, 255, 255, 0.2);
   border-radius: 8px;
@@ -9,7 +9,6 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-top: auto; /* Push to bottom */
 }
 
 .addTabBox:hover {
@@ -20,6 +19,7 @@
 
 .addTabIcon {
   font-size: 18px;
+  margin-top: 5px;
   color: rgba(255, 255, 255, 0.6);
 }
 

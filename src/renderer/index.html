@@ -19,25 +19,18 @@
           <p class="name">Surface</p>
         </div>
       </div>
-      <!-- Top Navigation Bar (like Zen) -->
+      <!-- Top Navigation Bar -->
     <div id="navigation-bar">
       <!-- Left nav controls -->
       <div class="nav-controls-left">
         <button id="back-btn" class="nav-btn" disabled title="Go back">
-          <svg width="16" height="16" viewBox="0 0 16 16">
-            <path d="M10 2l-6 6 6 6" stroke="currentColor" stroke-width="2" fill="none"/>
-          </svg>
+          <img src = './src/assets/back.svg'/>
         </button>
         <button id="forward-btn" class="nav-btn" disabled title="Go forward">
-          <svg width="16" height="16" viewBox="0 0 16 16">
-            <path d="M6 2l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none"/>
-          </svg>
+          <img src = './src/assets/forward.svg'/>
         </button>
         <button id="reload-btn" class="nav-btn" title="Reload page">
-          <svg width="16" height="16" viewBox="0 0 16 16">
-            <path d="M8 2v4l3-3-3-3zM8 14v-4l-3 3 3 3z" stroke="currentColor" stroke-width="1" fill="none"/>
-            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1" fill="none"/>
-          </svg>
+          <img src="./src/assets/refresh.svg"/>
         </button>
       </div>
 
@@ -45,9 +38,7 @@
       <div class="url-bar-container">
         <div class="url-bar">
           <div class="security-icon" id="security-icon">
-            <svg width="14" height="14" viewBox="0 0 14 14">
-              <path d="M7 1L3 3v4c0 2.5 2.5 5 4 6 1.5-1 4-3.5 4-6V3L7 1z" stroke="currentColor" stroke-width="1" fill="none"/>
-            </svg>
+            <img src = './src/assets/security.svg'/>
           </div>
           <input 
             type="text" 
@@ -58,9 +49,7 @@
           >
           <div class="url-actions">
             <button id="bookmark-btn" class="url-action-btn" title="Bookmark this page">
-              <svg width="14" height="14" viewBox="0 0 14 14">
-                <path d="M3 2h8v10l-4-3-4 3V2z" stroke="currentColor" stroke-width="1" fill="none"/>
-              </svg>
+              <img src = './src/assets/bookmark.svg'/>
             </button>
           </div>
         </div>
@@ -69,11 +58,7 @@
       <!-- Right controls -->
       <div class="nav-controls-right">
         <button id="menu-btn" class="nav-btn" title="Menu">
-          <svg width="16" height="16" viewBox="0 0 16 16">
-            <circle cx="3" cy="8" r="1" fill="currentColor"/>
-            <circle cx="8" cy="8" r="1" fill="currentColor"/>
-            <circle cx="13" cy="8" r="1" fill="currentColor"/>
-          </svg>
+          <img src="./src/assets/more.svg" />
         </button>
       </div>
     </div>
@@ -114,28 +99,24 @@
         <div id="welcome-screen" class="active">
           <div class="welcome-content">
             <div class="welcome-header">
-              <h1>🌊 Surface Browser</h1>
-              <p>Fast, modern, and built for you</p>
+              <h1>Surface Browser</h1>
+              <p>Your partner while surfing the web~</p>
             </div>
             <!--This needs to be fixed, not visible as of now. User is directed to google.com directly-->
             <div class="quick-links">
               <div class="quick-link-category">
                 <h3>Quick Actions</h3>
                 <div class="quick-links-grid">
-                  <button class="quick-link" data-action="bookmarks">
-                    <span class="quick-link-icon">📚</span>
-                    <span class="quick-link-text">Bookmarks</span>
-                  </button>
                   <button class="quick-link" data-action="history">
-                    <span class="quick-link-icon">🕰</span>
+                    <span class="quick-link-icon"><img src = './src/assets/history.svg'/></span>
                     <span class="quick-link-text">History</span>
                   </button>
                   <button class="quick-link" data-action="settings">
-                    <span class="quick-link-icon">⚙️</span>
+                    <span class="quick-link-icon"><img src="./src/assets/settings.svg"/></span>
                     <span class="quick-link-text">Settings</span>
                   </button>
                   <button class="quick-link" data-action="downloads">
-                    <span class="quick-link-icon">📥</span>
+                    <span class="quick-link-icon"><img src="./src/assets/downloads.svg"/></span>
                     <span class="quick-link-text">Downloads</span>
                   </button>
                 </div>

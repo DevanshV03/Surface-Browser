@@ -1,30 +1,61 @@
 const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const path = require('node:path');
+const fs = require('fs');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-class SurfaceBrowser{
+class BookmarkManager {
+  constructor() {
+    this.dataPath = path.join(app.getPath('userData'), 'bookmarks.json');
+  }
+
+  saveBookmarkTab(tab) {
+    const current = this.loadBookmarkTabs();
+    const exists = current.find(t => t.url === tab.url);
+    if (exists) return;
+
+    let toBookmark = {
+      bookmarkId: `bookmark-${Date.now()}`,
+      url: tab.url,
+      title: tab.title,
+      favicon: tab.favicon,
+      timestamp: Date.now()
+    }
+
+    current.push(toBookmark);
+    fs.writeFileSync(this.dataPath, JSON.stringify({ bookmarks: current }, null, 2));
+  }
+
+  loadBookmarkTabs() {
+    if (!fs.existsSync(this.dataPath)) return [];
+    return JSON.parse(fs.readFileSync(this.dataPath)).bookmarks || [];
+  }
+
+}
+
+class SurfaceBrowser {
   // Checks for the development environment
   constructor() {
     this.mainWindow = null;
     this.isDevMode = process.argv.includes('--dev') || !app.isPackaged;
+    this.bookmarkManager = new BookmarkManager();
   }
 
-  createMainWindow(){
+  createMainWindow() {
     this.mainWindow = new BrowserWindow({
       //Window sizing
-      width:1200,
+      width: 1200,
       height: 800,
       minWidth: 900,
       minHeight: 600,
 
       //Titlebar Styling
-      titleBarStyle: process.platform === 'darwin'? 'hiddenInset': 'hidden',
-      frame:false,
-      transparent:false,
+      titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+      frame: false,
+      transparent: false,
       backgroundColor: '#1a1a1a',
 
       //smooth window behaviour
@@ -33,50 +64,51 @@ class SurfaceBrowser{
 
       //Security Configurations
       webPreferences: {
-  preload: app.isPackaged
-    ? path.join(__dirname, 'preload.js')
-    : path.join(__dirname, '../preload/index.js'),
-  nodeIntegration: false,
-  contextIsolation: true,
-  webSecurity: true,
-  webviewTag: true,
-}
+        preload: app.isPackaged
+          ? path.join(__dirname, 'preload.js')
+          : path.join(__dirname, '../preload/index.js'),
+        nodeIntegration: false,
+        contextIsolation: true,
+        webSecurity: true,
+        webviewTag: true,
+      }
 
     });
     //For loading the UI
     this.mainWindow.loadURL('http://localhost:5173');
 
     //If dev mode is enabled then open the dev tools
-    if(this.isDevMode){
+    if (this.isDevMode) {
       this.mainWindow.webContents.openDevTools();
     }
 
     //Smooth Window animations and appearances
-    this.mainWindow.once('ready-to-show',() =>{
+    this.mainWindow.once('ready-to-show', () => {
       this.mainWindow.show();
 
-      if (process.platform === 'win32'){
+      if (process.platform === 'win32') {
         this.mainWindow.setOpacity(0);
         let opacity = 0;
-        const fadeIn = setInterval(()=>{
+        const fadeIn = setInterval(() => {
           opacity += 0.05;
           this.mainWindow.setOpacity(opacity);
-          if(opacity>=1){
+          if (opacity >= 1) {
             clearInterval(fadeIn);
           }
-        },16);
+        }, 16);
       }
     });
 
     //window events
-    this.mainWindow.on('closed', ()=>{
+    this.mainWindow.on('closed', () => {
       this.mainWindow = null;
     });
-
+    console.log("Bookmark Manager Created Successfully");
+    console.log("Bookmark file path:", this.bookmarkManager.dataPath);
     return this.mainWindow;
   }
 
-    setupApplicationMenu() {
+  setupApplicationMenu() {
     // Remove default menu for cleaner look (like Arc/Zen)
     if (process.platform !== 'darwin') {
       Menu.setApplicationMenu(null);
@@ -99,30 +131,38 @@ class SurfaceBrowser{
       Menu.setApplicationMenu(Menu.buildFromTemplate(template));
     }
   }
-    setupIpcHandlers(){
-      ipcMain.handle('window-minimize', ()=>{
-        if(this.mainWindow){
-          this.mainWindow.minimize();
-        }
-      });
+  setupIpcHandlers() {
+    ipcMain.handle('window-minimize', () => {
+      if (this.mainWindow) {
+        this.mainWindow.minimize();
+      }
+    });
 
-      ipcMain.handle('window-maximize', () =>{
-        if(this.mainWindow){
-          if(this.mainWindow.isMaximized()){
-            this.mainWindow.restore();
-          }
-          else{
-            this.mainWindow.maximize();
-          }
+    ipcMain.handle('window-maximize', () => {
+      if (this.mainWindow) {
+        if (this.mainWindow.isMaximized()) {
+          this.mainWindow.restore();
         }
-      });
+        else {
+          this.mainWindow.maximize();
+        }
+      }
+    });
 
-      ipcMain.handle('window-close', () => {
-        if(this.mainWindow){
-          this.mainWindow.close();
-        }
-      });
-    }
+    ipcMain.handle('window-close', () => {
+      if (this.mainWindow) {
+        this.mainWindow.close();
+      }
+    });
+
+    ipcMain.handle('add-bookmark', (event, tabData) => {
+      surfaceBrowser.bookmarkManager.saveBookmarkTab(tabData);
+    });
+
+    ipcMain.handle('load-bookmarks', () => {
+      return surfaceBrowser.bookmarkManager.loadBookmarkTabs();
+    })
+  }
 }
 
 const surfaceBrowser = new SurfaceBrowser();

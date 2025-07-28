@@ -12,7 +12,9 @@ function AddTabButton({onAddTab}){
         onClick={handleClick}
         title="New Tab"
         >
-            <div className={styles.addTabIcon}>+</div>
+            <div className={styles.addTabIcon}>
+                <img src = './src/assets/add.svg'/>
+            </div>
         </div>
     );
 }

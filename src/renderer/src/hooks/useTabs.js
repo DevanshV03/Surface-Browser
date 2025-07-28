@@ -1,36 +1,50 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
-function useTabs(callbacks = {}){
+function useTabs(callbacks = {}) {
     const [tabs, setTabs] = useState([{
         id: 1,
         title: 'New Tab',
         favicon: '🌐',
-        url: 'https://www.google.com',
+        url: '',
         webviewId: 'webview-1'
     }]);
 
     const [activeTabId, setActiveTabId] = useState(1);
-    
-    // Notify vanilla JS when active tab changes
+    const isExternalSwitch = useRef(false);
+
     useEffect(() => {
-        if (callbacks.onTabSwitch) {
+        console.log('useEffect triggered - activeTabId:', activeTabId, 'isExternal:', isExternalSwitch.current);
+
+        if (callbacks.onTabSwitch && !isExternalSwitch.current) {
             const activeTab = tabs.find(tab => tab.id === activeTabId);
-            callbacks.onTabSwitch(activeTabId, activeTab);
+
+            
+            if (activeTab) {
+                console.log('Calling onTabSwitch with:', activeTabId, activeTab);
+                callbacks.onTabSwitch(activeTabId, activeTab);
+            } else {
+                console.log('Tab not found in React state - skipping callback for:', activeTabId);
+            }
         }
+        isExternalSwitch.current = false; // Reset flag
     }, [activeTabId, tabs]);
-    
+
+
+
     const addTab = () => {
+        console.log('ADD TAB CALLED!');
+        console.trace(); // This will show you the call stack
+
         const newTab = {
             id: Date.now(),
             title: 'New Tab',
             favicon: '🌐',
-            url: 'https://www.google.com',
+            url: '',
             webviewId: `webview-${Date.now()}`
         };
         setTabs(prevTabs => [...prevTabs, newTab]);
         setActiveTabId(newTab.id);
-        
-        // Notify vanilla JS about new tab
+
         if (callbacks.onTabAdd) {
             callbacks.onTabAdd(newTab.id, newTab);
         }
@@ -40,25 +54,25 @@ function useTabs(callbacks = {}){
         setTabs(prevTabs => {
             const filteredTabs = prevTabs.filter(tab => tab.id !== tabId);
 
-            if(filteredTabs.length === 0){
+            if (filteredTabs.length === 0) {
                 const newTab = {
                     id: Date.now(),
                     title: 'New Tab',
                     favicon: '🌐',
-                    url: 'https://www.google.com',
+                    url: '',
                     webviewId: `webview-${Date.now()}`
                 };
                 setActiveTabId(newTab.id);
                 return [newTab];
             }
-            
-            if(tabId === activeTabId){
+
+            if (tabId === activeTabId) {
                 setActiveTabId(filteredTabs[0].id);
             }
 
             return filteredTabs;
         });
-        
+
         // Notify vanilla JS about tab removal
         if (callbacks.onTabRemove) {
             callbacks.onTabRemove(tabId);
@@ -69,15 +83,21 @@ function useTabs(callbacks = {}){
         setActiveTabId(tabId);
     };
 
+    // Add external switch function for bookmarks
+    const switchToExternalTab = (tabId) => {
+        isExternalSwitch.current = true; // Mark as external
+        setActiveTabId(tabId);
+    };
+
     const updateTab = (tabId, updates) => {
-        setTabs(prevTabs => 
-            prevTabs.map(tab => 
+        setTabs(prevTabs =>
+            prevTabs.map(tab =>
                 tab.id === tabId ? { ...tab, ...updates } : tab
             )
         );
     };
 
-    return [tabs, activeTabId, addTab, removeTab, switchToTab, updateTab];
+    return [tabs, activeTabId, addTab, removeTab, switchToTab, updateTab, switchToExternalTab];
 }
 
 export default useTabs;
