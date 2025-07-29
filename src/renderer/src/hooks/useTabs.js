@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
+import { DEFAULT_TAB_DATA } from "../config/constants";
 
 function useTabs(callbacks = {}) {
     const [tabs, setTabs] = useState([{
         id: 1,
-        title: 'New Tab',
-        favicon: '🌐',
-        url: '',
+        title: DEFAULT_TAB_DATA.TITLE,
+        favicon: DEFAULT_TAB_DATA.FAVICON,
+        url: DEFAULT_TAB_DATA.URL,
         webviewId: 'webview-1'
     }]);
 
@@ -37,9 +38,9 @@ function useTabs(callbacks = {}) {
 
         const newTab = {
             id: Date.now(),
-            title: 'New Tab',
-            favicon: '🌐',
-            url: '',
+            title: DEFAULT_TAB_DATA.TITLE,
+            favicon: DEFAULT_TAB_DATA.FAVICON,
+            url: DEFAULT_TAB_DATA.URL,
             webviewId: `webview-${Date.now()}`
         };
         setTabs(prevTabs => [...prevTabs, newTab]);
@@ -57,9 +58,9 @@ function useTabs(callbacks = {}) {
             if (filteredTabs.length === 0) {
                 const newTab = {
                     id: Date.now(),
-                    title: 'New Tab',
-                    favicon: '🌐',
-                    url: '',
+                    title: DEFAULT_TAB_DATA.TITLE,
+                    favicon: DEFAULT_TAB_DATA.FAVICON,
+                    url: DEFAULT_TAB_DATA.URL,
                     webviewId: `webview-${Date.now()}`
                 };
                 setActiveTabId(newTab.id);

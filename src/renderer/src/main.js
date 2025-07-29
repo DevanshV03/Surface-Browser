@@ -2,6 +2,9 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import TabSidebar from './components/TabSidebar';
 import { DOMElements,safeGetElement } from './utils/domUtils';
+import {TIMEOUTS, DEFAULT_TAB_DATA, ICON_URLS } from './config/constants';
+import { NavigationService } from './services/navigationService';
+import { LoadingService } from './services/loadingService';
 
 // Surface Browser - URL Navigation and Web Engine
 class SurfaceBrowserRenderer {
@@ -10,13 +13,14 @@ class SurfaceBrowserRenderer {
     this.webviews = new Map(); // Store multiple webviews
     this.activeWebview = null;
     this.reactTabsRef = null; // Reference to React tab system
+    this.navigationService = new NavigationService(this);
+    this.loadingService = new LoadingService(this);
     this.init();
   }
 
   init() {
     this.setupUrlNavigation();
     this.setupWindowControls();
-    this.setupNavigationControls();
     this.handleBookmark();
     this.mountReactTabs();
     this.initializeDefaultTab();
@@ -26,15 +30,15 @@ class SurfaceBrowserRenderer {
     // Create webview for the default tab immediately
     const defaultTabData = {
       id: 1,
-      url: '',
+      url: DEFAULT_TAB_DATA.URL,
       webviewId: 'webview-1',
-      title: 'New Tab',
-      favicon: '🌐'
+      title: DEFAULT_TAB_DATA.TITLE,
+      favicon: DEFAULT_TAB_DATA.FAVICON
     };
 
     setTimeout(() => {
       this.handleTabSwitch(1, defaultTabData);
-    }, 100); // Small delay to ensure DOM is ready
+    }, TIMEOUTS.DEFAULT_TIMEOUT); // Small delay to ensure DOM is ready
   }
 
   mountReactTabs() {
@@ -96,12 +100,12 @@ handleTabSwitch(tabId, tabData) {
       this.showWebContent(); // Hide welcome screen
 
       setTimeout(() => {
-        this.updateNavigationControls();
+        this.navigationService.NavigationUpdater();
 
         // if (activeWebview.src) {
         //   this.updateUrlBar(activeWebview.src);
         // }
-      }, 100);
+      }, TIMEOUTS.DEFAULT_TIMEOUT);
     }
   } else {
     // No URL - keep welcome screen visible and no active webview
@@ -184,7 +188,7 @@ handleTabSwitch(tabId, tabData) {
       this.reactUpdateTab?.(tabId, { url: event.url });
     }
     this.updateUrlBar(event.url);
-    this.updateNavigationControls();
+    this.navigationService.NavigationUpdater();
   }
 });
 
@@ -208,10 +212,10 @@ handleTabSwitch(tabId, tabData) {
             try {
               const url = new URL(webview.src);
               const possibleFavicons = [
-                `${url.origin}/favicon.ico`,
-                `${url.origin}/favicon.png`,
-                `${url.origin}/apple-touch-icon.png`,
-                `${url.origin}/android-chrome-192x192.png`
+                `${url.origin}/${ICON_URLS.ICO_URL}`,
+                `${url.origin}/${ICON_URLS.PNG_URL}`,
+                `${url.origin}/${ICON_URLS.APPLE_PNG_URL}`,
+                `${url.origin}/${ICON_URLS.ANDROID_PNG_URL}`
               ];
 
               // Use the first favicon URL (most sites have /favicon.ico)
@@ -231,17 +235,17 @@ handleTabSwitch(tabId, tabData) {
               if (this.currentTabData) {
                 this.currentTabData = {
                   ...this.currentTabData,
-                  favicon: '🌐'
+                  favicon: DEFAULT_TAB_DATA.FAVICON
                 };
-                this.reactUpdateTab?.(tabId, { favicon: '🌐' });
+                this.reactUpdateTab?.(tabId, { favicon: DEFAULT_TAB_DATA.FAVICON });
               }
             }
-          }, 300);
-          this.updateNavigationControls();
+          }, TIMEOUTS.HIGH_TIMEOUT);
+          this.navigationService.NavigationUpdater();
         }
       });
 
-      this.setupLoadingStateForWebview(webview);
+      this.loadingService.setupWebviewLoadingState(webview);
 
       // Store webview reference
       this.webviews.set(tabId, webview);
@@ -319,8 +323,8 @@ handleTabSwitch(tabId, tabData) {
           this.reactUpdateTab?.(tabId, { url: url });
 
           setTimeout(() => {
-            this.updateNavigationControls();
-          }, 100);
+            this.navigationService.NavigationUpdater();
+          }, TIMEOUTS.DEFAULT_TIMEOUT);
         }
       } else {
         console.warn('No current tab data for navigation');
@@ -329,7 +333,7 @@ handleTabSwitch(tabId, tabData) {
           if (this.activeWebview) {
             this.activeWebview.src = url;
           }
-        }, 200);
+        }, TIMEOUTS.MEDIUM_TIMEOUT);
       }
     }
   }
@@ -375,140 +379,8 @@ handleTabSwitch(tabId, tabData) {
         window.electronAPI?.closeWindow();
       });
     }
-  }
+  }  
 
-  // Setting up the navigation controls
-  setupNavigationControls() {
-    const backBtn = safeGetElement(DOMElements.backBtn, 'back-btn');
-    const forwardBtn = safeGetElement(DOMElements.forwardBtn, 'forward-btn');
-    const reloadBtn = safeGetElement(DOMElements.reloadBtn, 'reload-btn');
-
-    if (backBtn) {
-      backBtn.addEventListener('click', () => {
-        if (this.activeWebview && this.activeWebview.canGoBack()) {
-          this.activeWebview.goBack();
-        }
-      });
-    }
-
-    if (forwardBtn) {
-      forwardBtn.addEventListener('click', () => {
-        if (this.activeWebview && this.activeWebview.canGoForward()) {
-          this.activeWebview.goForward();
-        }
-      });
-    }
-
-    if (reloadBtn) {
-      reloadBtn.addEventListener('click', () => {
-        if (this.activeWebview) {
-          this.activeWebview.reload();
-        }
-      });
-    }
-  }
-
-  // Update navigation button states based on the current active webview
-  updateNavigationControls() {
-    const backBtn = safeGetElement(DOMElements.backBtn, 'back-btn');
-    const forwardBtn = safeGetElement(DOMElements.forwardBtn, 'forward-btn');
-
-    if (this.activeWebview) {
-      try {
-        if (backBtn) {
-          backBtn.disabled = !this.activeWebview.canGoBack();
-        }
-        if (forwardBtn) {
-          forwardBtn.disabled = !this.activeWebview.canGoForward();
-        }
-      } catch (error) {
-        if (backBtn) backBtn.disabled = true;
-        if (forwardBtn) forwardBtn.disabled = true;
-      }
-    }
-  }
-
-  // Setup loading state for a specific webview
-  setupLoadingStateForWebview(webview) {
-    if (webview) {
-      // Showing the loading bar once a page starts loading
-      webview.addEventListener('did-start-loading', () => {
-        if (this.activeWebview === webview) {
-          this.showLoadingBar();
-          this.setLoadingState(true);
-        }
-      });
-      // Disables the loading state of the loading bar once the page stops loading
-      webview.addEventListener('did-stop-loading', () => {
-        if (this.activeWebview === webview) {
-          this.hideLoadingBar();
-          this.setLoadingState(false);
-        }
-      });
-    }
-  }
-
-  showLoadingBar() {
-    const loadingBar = safeGetElement(DOMElements.loadingBar, 'loading-bar');
-    const progressBar = document.querySelector('.loading-progress');
-
-    if (loadingBar && progressBar) {
-      loadingBar.classList.remove('hidden');
-      progressBar.style.width = '0%'
-
-      let progress = 0;
-      const progressInterval = setInterval(() => {
-        progress += Math.random() * 15;
-        if (progress > 90) progress = 90;
-        progressBar.style.width = `${progress}%`;
-
-        if (progress >= 90) {
-          clearInterval(progressInterval);
-        }
-      }, 100);
-      this.progressInterval = progressInterval;
-    }
-  }
-
-  hideLoadingBar() {
-    const loadingBar = safeGetElement(DOMElements.loadingBar, 'loading-bar');
-    const progressBar = document.querySelector('.loading-progress');
-
-    if (this.progressInterval) {
-      clearInterval(this.progressInterval);
-    }
-
-    if (progressBar) {
-      progressBar.style.width = '100%';
-
-      setTimeout(() => {
-        if (loadingBar) {
-          loadingBar.classList.add('hidden');
-        }
-        if (progressBar) {
-          progressBar.style.width = '0%';
-        }
-      }, 200);
-    }
-  }
-
-  setLoadingState(isLoading) {
-    const reloadBtn = safeGetElement(DOMElements.reloadBtn, 'reload-btn');
-    if (reloadBtn) {
-      // Change reload button to stop button while loading
-      if (isLoading) {
-        reloadBtn.innerHTML = `
-        <img src = "./src/assets/close.svg"/>
-      `;
-        reloadBtn.title = 'Stop loading';
-      } else {
-        reloadBtn.innerHTML = `
-        <img src="./src/assets/refresh.svg"/>
-      `;
-        reloadBtn.title = 'Reload page';
-      }
-    }
-  }
 }
 
 // Initialize when page loads

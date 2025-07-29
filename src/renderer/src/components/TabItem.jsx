@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './styles/TabItem.module.css';
+import { DEFAULT_TAB_DATA } from '../config/constants';
 
 function TabItem({ tab, isActive, onClose, onSwitch }){
     const handleClose = (e) => {
@@ -28,7 +29,7 @@ function TabItem({ tab, isActive, onClose, onSwitch }){
                     }}/>
                 
                 ): (
-                    tab.favicon || '🌐'
+                    tab.favicon || DEFAULT_TAB_DATA.FAVICON
                 )}
             </div>
             <button
