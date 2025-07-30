@@ -191,6 +191,21 @@ handleTabSwitch(tabId, tabData) {
     this.navigationService.NavigationUpdater();
   }
 });
+      webview.addEventListener('did-navigate-in-page',(event)=>{
+        if(this.activeWebview === webview){
+          this.currentUrl = event.url;
+          if(this.currentTabData){
+            this.currentTabData = {
+              ...this.currentTabData,
+              url: event.url,
+            };
+
+            this.reactUpdateTab?.(tabId, {url:event.url});
+          }
+          this.updateUrlBar(event.url);
+          this.navigationService.NavigationUpdater();
+        }
+      });
 
       webview.addEventListener('page-title-updated', (event) => {
         if (this.activeWebview === webview) {
