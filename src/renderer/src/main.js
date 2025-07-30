@@ -1,10 +1,10 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import TabSidebar from './components/TabSidebar';
-import { DOMElements,safeGetElement } from './utils/domUtils';
-import {TIMEOUTS, DEFAULT_TAB_DATA, ICON_URLS } from './config/constants';
+import { DOMElements, safeGetElement } from './utils/domUtils';
+import { TIMEOUTS, DEFAULT_TAB_DATA, ICON_URLS } from './config/constants';
 import { NavigationService } from './services/navigationService';
 import { LoadingService } from './services/loadingService';
+import { UIService } from './services/uiService';
 
 // Surface Browser - URL Navigation and Web Engine
 class SurfaceBrowserRenderer {
@@ -15,6 +15,7 @@ class SurfaceBrowserRenderer {
     this.reactTabsRef = null; // Reference to React tab system
     this.navigationService = new NavigationService(this);
     this.loadingService = new LoadingService(this);
+    this.uiService = new UIService(this);
     this.init();
   }
 
@@ -22,7 +23,7 @@ class SurfaceBrowserRenderer {
     this.setupUrlNavigation();
     this.setupWindowControls();
     this.handleBookmark();
-    this.mountReactTabs();
+    this.uiService.mountReactComponents();
     this.initializeDefaultTab();
   }
 
@@ -41,89 +42,73 @@ class SurfaceBrowserRenderer {
     }, TIMEOUTS.DEFAULT_TIMEOUT); // Small delay to ensure DOM is ready
   }
 
-  mountReactTabs() {
-    const mountPoint = document.querySelector('#react-tab-mount');
-    if (mountPoint) {
-      const root = createRoot(mountPoint);
-      const tabSidebarElement = React.createElement(TabSidebar, {
-        onTabSwitch: this.handleTabSwitch.bind(this),
-        onTabAdd: this.handleTabAdd.bind(this),
-        onTabRemove: this.handleTabRemove.bind(this),
 
-        registerUpdateTab: fn => { this.reactUpdateTab = fn; }
-      });
-      root.render(tabSidebarElement); // Use the element with props
-      console.log('React TabSidebar mounted successfully');
+  // Handle tab switching from React components
+  handleTabSwitch(tabId, tabData) {
+    console.log(' Switching to tab:', tabId, tabData);
+
+    if (!tabData) {
+      console.log(' Tab switch aborted - tabData is undefined for tab:', tabId);
+      return;
     }
-  }
+
+    this.currentTabData = tabData;
+
+    // Hide all webviews
+    this.webviews.forEach(webview => {
+      webview.style.display = 'none';
+    });
 
 
- // Handle tab switching from React components
-handleTabSwitch(tabId, tabData) {
-  console.log(' Switching to tab:', tabId, tabData);
-  
-  if (!tabData) {
-    console.log(' Tab switch aborted - tabData is undefined for tab:', tabId);
-    return;
-  }
-  
-  this.currentTabData = tabData;
+    const urlInput = safeGetElement(DOMElements.urlInput, 'url-input');
+    if (urlInput) {
+      if (tabData.url && tabData.url.trim() !== '') {
+        const displayUrl = tabData.url.replace(/^https?:\/\//, '');
+        urlInput.value = displayUrl;
+        console.log('URL bar updated to:', displayUrl);
+      } else {
+        urlInput.value = '';
+        console.log('URL bar cleared for empty tab');
+      }
+    }
 
-  // Hide all webviews
-  this.webviews.forEach(webview => {
-    webview.style.display = 'none';
-  });
+    // Only create/show webview if there's a valid URL
+    if (tabData && tabData.url && tabData.url.trim() !== '') {
+      let activeWebview = this.webviews.get(tabId);
+      if (!activeWebview) {
+        activeWebview = this.createWebviewForTab(tabId, tabData);
+      }
 
+      if (activeWebview) {
+        activeWebview.style.display = 'flex';
+        this.activeWebview = activeWebview;
+        this.showWebContent(); // Hide welcome screen
 
-  const urlInput = safeGetElement(DOMElements.urlInput,'url-input');
-  if (urlInput) {
-    if (tabData.url && tabData.url.trim() !== '') {
-      const displayUrl = tabData.url.replace(/^https?:\/\//, '');
-      urlInput.value = displayUrl;
-      console.log('URL bar updated to:', displayUrl);
+        setTimeout(() => {
+          this.navigationService.NavigationUpdater();
+
+          // if (activeWebview.src) {
+          //   this.updateUrlBar(activeWebview.src);
+          // }
+        }, TIMEOUTS.DEFAULT_TIMEOUT);
+      }
     } else {
-      urlInput.value = '';
-      console.log('URL bar cleared for empty tab');
+      // No URL - keep welcome screen visible and no active webview
+      this.activeWebview = null;
+      const welcomeScreen = safeGetElement(DOMElements.welcomeScreen, 'welcome-screen');
+      const webContainer = safeGetElement(DOMElements.webContainer, 'web-container');
+
+      if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+      if (webContainer) webContainer.classList.add('hidden');
+
+      console.log('Empty tab - showing welcome screen');
     }
   }
-
-  // Only create/show webview if there's a valid URL
-  if (tabData && tabData.url && tabData.url.trim() !== '') {
-    let activeWebview = this.webviews.get(tabId);
-    if (!activeWebview) {
-      activeWebview = this.createWebviewForTab(tabId, tabData);
-    }
-
-    if (activeWebview) {
-      activeWebview.style.display = 'flex';
-      this.activeWebview = activeWebview;
-      this.showWebContent(); // Hide welcome screen
-
-      setTimeout(() => {
-        this.navigationService.NavigationUpdater();
-
-        // if (activeWebview.src) {
-        //   this.updateUrlBar(activeWebview.src);
-        // }
-      }, TIMEOUTS.DEFAULT_TIMEOUT);
-    }
-  } else {
-    // No URL - keep welcome screen visible and no active webview
-    this.activeWebview = null;
-    const welcomeScreen = safeGetElement(DOMElements.welcomeScreen,'welcome-screen');
-    const webContainer = safeGetElement(DOMElements.webContainer,'web-container');
-
-    if (welcomeScreen) welcomeScreen.classList.remove('hidden');
-    if (webContainer) webContainer.classList.add('hidden');
-
-    console.log('Empty tab - showing welcome screen');
-  }
-}
 
 
 
   handleBookmark() {
-    const bookmarkBtn = safeGetElement(DOMElements.bookmarkBtn,'bookmark-btn');
+    const bookmarkBtn = safeGetElement(DOMElements.bookmarkBtn, 'bookmark-btn');
 
     if (bookmarkBtn) {
       bookmarkBtn.addEventListener("click", () => {
@@ -144,13 +129,13 @@ handleTabSwitch(tabId, tabData) {
   handleTabAdd(tabId, tabData) {
     console.log('Creating webview for new tab:', tabId);
     // If the tab has content, then it's intentional (like bookmark), so switch
-  if (tabData && tabData.url && tabData.url.trim() !== '') {
-    this.handleTabSwitch(tabId, tabData);
-  } else {
-    // Just log that a new empty tab was created, don't switch to it
-    console.log('New empty tab created, staying on current tab');
+    if (tabData && tabData.url && tabData.url.trim() !== '') {
+      this.handleTabSwitch(tabId, tabData);
+    } else {
+      // Just log that a new empty tab was created, don't switch to it
+      console.log('New empty tab created, staying on current tab');
+    }
   }
-}
 
   // Handle tab removal
   handleTabRemove(tabId) {
@@ -176,31 +161,31 @@ handleTabSwitch(tabId, tabData) {
 
       // Add event listeners for this specific webview
       webview.addEventListener('did-navigate', (event) => {
-  if (this.activeWebview === webview) {
-    this.currentUrl = event.url;
-    if (this.currentTabData) {
-      this.currentTabData = {
-        ...this.currentTabData,
-        url: event.url,
-      };
-      
-      // Update React tab state when navigating
-      this.reactUpdateTab?.(tabId, { url: event.url });
-    }
-    this.updateUrlBar(event.url);
-    this.navigationService.NavigationUpdater();
-  }
-});
-      webview.addEventListener('did-navigate-in-page',(event)=>{
-        if(this.activeWebview === webview){
+        if (this.activeWebview === webview) {
           this.currentUrl = event.url;
-          if(this.currentTabData){
+          if (this.currentTabData) {
             this.currentTabData = {
               ...this.currentTabData,
               url: event.url,
             };
 
-            this.reactUpdateTab?.(tabId, {url:event.url});
+            // Update React tab state when navigating
+            this.reactUpdateTab?.(tabId, { url: event.url });
+          }
+          this.updateUrlBar(event.url);
+          this.navigationService.NavigationUpdater();
+        }
+      });
+      webview.addEventListener('did-navigate-in-page', (event) => {
+        if (this.activeWebview === webview) {
+          this.currentUrl = event.url;
+          if (this.currentTabData) {
+            this.currentTabData = {
+              ...this.currentTabData,
+              url: event.url,
+            };
+
+            this.reactUpdateTab?.(tabId, { url: event.url });
           }
           this.updateUrlBar(event.url);
           this.navigationService.NavigationUpdater();
@@ -394,7 +379,7 @@ handleTabSwitch(tabId, tabData) {
         window.electronAPI?.closeWindow();
       });
     }
-  }  
+  }
 
 }
 
