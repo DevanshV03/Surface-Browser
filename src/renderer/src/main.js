@@ -107,23 +107,32 @@ class SurfaceBrowserRenderer {
 
 
 
-  handleBookmark() {
-    const bookmarkBtn = safeGetElement(DOMElements.bookmarkBtn, 'bookmark-btn');
+handleBookmark() {
+  const bookmarkBtn = safeGetElement(DOMElements.bookmarkBtn,'bookmark-btn');
 
-    if (bookmarkBtn) {
-      bookmarkBtn.addEventListener("click", () => {
+  if (bookmarkBtn) {
+    bookmarkBtn.addEventListener("click", async () => {
+      console.log("bookmark button clicked");
+      const tabData = {
+        url: this.currentTabData.url,
+        title: this.currentTabData.title,
+        favicon: this.currentTabData.favicon
+      };
 
-        console.log("bookmark button clicked");
-        const tabData = {
-          url: this.currentTabData.url,
-          title: this.currentTabData.title,
-          favicon: this.currentTabData.favicon
-        };
-
-        window.electronAPI.addBookmark(tabData);
-      });
-    }
+      const savedBookmark = await window.electronAPI.addBookmark(tabData);
+      
+      if (savedBookmark) {
+        window.dispatchEvent(new CustomEvent('bookmarkAdded', { 
+          detail: savedBookmark 
+        }));
+        console.log("Bookmark added and event dispatched:", savedBookmark);
+      } else {
+        console.log("Bookmark already exists - no event dispatched");
+      }
+    });
   }
+}
+
 
   // Handle new tab creation
   handleTabAdd(tabId, tabData) {

@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI',{
     closeWindow: () => ipcRenderer.invoke('window-close'),
     addBookmark: (tabData) => ipcRenderer.invoke('add-bookmark', tabData),
     loadBookmarks: () => ipcRenderer.invoke('load-bookmarks'),
-
+    deleteBookmark: (bookmarkId)=> ipcRenderer.invoke('delete-bookmark', bookmarkId),
 
     //Getting system information
     platform: process.platform,

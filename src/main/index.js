@@ -15,7 +15,7 @@ class BookmarkManager {
   saveBookmarkTab(tab) {
     const current = this.loadBookmarkTabs();
     const exists = current.find(t => t.url === tab.url);
-    if (exists) return;
+    if (exists) return exists;
 
     let toBookmark = {
       bookmarkId: `bookmark-${Date.now()}`,
@@ -27,13 +27,28 @@ class BookmarkManager {
 
     current.push(toBookmark);
     fs.writeFileSync(this.dataPath, JSON.stringify({ bookmarks: current }, null, 2));
+
+    return toBookmark;
   }
 
   loadBookmarkTabs() {
     if (!fs.existsSync(this.dataPath)) return [];
     return JSON.parse(fs.readFileSync(this.dataPath)).bookmarks || [];
   }
-
+  deleteBookmark(bookmarkId) {
+    const current = this.loadBookmarkTabs();
+    const filteredBookmarks = current.filter(bookmark => bookmark.bookmarkId !== bookmarkId);
+    
+    // Only write if something was actually removed
+    if (filteredBookmarks.length !== current.length) {
+      fs.writeFileSync(this.dataPath, JSON.stringify({ bookmarks: filteredBookmarks }, null, 2));
+      console.log(`Bookmark ${bookmarkId} deleted successfully`);
+      return true; // Success
+    }
+    
+    console.log(`Bookmark ${bookmarkId} not found`);
+    return false; // Not found
+  }
 }
 
 class SurfaceBrowser {
@@ -156,12 +171,18 @@ class SurfaceBrowser {
     });
 
     ipcMain.handle('add-bookmark', (event, tabData) => {
-      surfaceBrowser.bookmarkManager.saveBookmarkTab(tabData);
+      const savedBookmark =  surfaceBrowser.bookmarkManager.saveBookmarkTab(tabData);
+      return savedBookmark;
     });
 
     ipcMain.handle('load-bookmarks', () => {
       return surfaceBrowser.bookmarkManager.loadBookmarkTabs();
     })
+
+    ipcMain.handle('delete-bookmark',(event, bookmarkId)=>{
+      const success = surfaceBrowser.bookmarkManager.deleteBookmark(bookmarkId);
+      return {success, bookmarkId};
+    });
   }
 }
 
