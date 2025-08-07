@@ -38,7 +38,7 @@ jobs:
           npm version $version --no-git-tag-version
 
       - name: Create the build and installer files
-        run: npm run build:win -- --publish=never
+        run: npm run build:win
 
       - name: Github release action
         uses: softprops/action-gh-release@v1
