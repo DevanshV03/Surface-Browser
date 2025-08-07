@@ -13,7 +13,7 @@ function AddTabButton({onAddTab}){
         title="New Tab"
         >
             <div className={styles.addTabIcon}>
-                <img src = './src/assets/add.svg'/>
+                <img src = './assets/add.svg'/>
             </div>
         </div>
     );

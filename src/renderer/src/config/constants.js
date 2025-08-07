@@ -7,7 +7,7 @@ export const TIMEOUTS = {
 
 export const DEFAULT_TAB_DATA = {
     URL: '',
-    FAVICON: '🌐',
+    FAVICON: '🌊',
     TITLE: 'New Tab'
 }
 

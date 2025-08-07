@@ -4,6 +4,23 @@ import { DOMElements, safeGetElement } from "../utils/domUtils";
 export class LoadingService {
     constructor(surfaceBrowser) {
         this.browser = surfaceBrowser;
+        this.cacheImages = this.preloadImages();
+    }
+
+    preloadImages() {
+        const cache = {};
+
+        // Pre-load both SVGs as Image objects
+        const refreshImg = new Image();
+        refreshImg.src = './assets/refresh.svg';
+
+        const closeImg = new Image();
+        closeImg.src = './assets/close.svg';
+
+        cache.refresh = refreshImg;
+        cache.close = closeImg;
+
+        return cache;
     }
 
     //Loading State setup
@@ -13,15 +30,16 @@ export class LoadingService {
             const img = reloadButton.querySelector('img');
             if (img) {
                 if (isLoading) {
-                    img.src = './src/assets/close.svg';
+                    img.src = this.cacheImages.close.src;
                     reloadButton.title = 'Stop loading';
                 } else {
-                    img.src = './src/assets/refresh.svg'
+                    img.src = this.cacheImages.refresh.src;
                     reloadButton.title = 'Reload page';
                 }
             }
 
         }
+
     }
     //show and hide loading bar functions
     showLoadingBar() {

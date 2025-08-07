@@ -15,6 +15,21 @@ export default defineConfig({
         '@renderer': resolve('src/renderer/src')
       }
     },
-    plugins: [react()]
+    plugins: [react()],
+    // ✅ ADD THESE CONFIGURATIONS TO FIX SVG LOADING:
+    publicDir: resolve('public'), // Explicitly set public directory
+    server: {
+      fs: {
+        strict: false // Allow serving files outside of root
+      }
+    },
+    build: {
+      assetsDir: 'assets',
+      rollupOptions: {
+        output: {
+          assetFileNames: 'assets/[name].[ext]' // Keep asset names predictable
+        }
+      }
+    }
   }
 })

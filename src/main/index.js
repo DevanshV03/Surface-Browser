@@ -38,14 +38,14 @@ class BookmarkManager {
   deleteBookmark(bookmarkId) {
     const current = this.loadBookmarkTabs();
     const filteredBookmarks = current.filter(bookmark => bookmark.bookmarkId !== bookmarkId);
-    
+
     // Only write if something was actually removed
     if (filteredBookmarks.length !== current.length) {
       fs.writeFileSync(this.dataPath, JSON.stringify({ bookmarks: filteredBookmarks }, null, 2));
       console.log(`Bookmark ${bookmarkId} deleted successfully`);
       return true; // Success
     }
-    
+
     console.log(`Bookmark ${bookmarkId} not found`);
     return false; // Not found
   }
@@ -80,17 +80,28 @@ class SurfaceBrowser {
       //Security Configurations
       webPreferences: {
         preload: app.isPackaged
-          ? path.join(__dirname, 'preload.js')
+          ? path.join(__dirname, '../preload/index.js')
           : path.join(__dirname, '../preload/index.js'),
         nodeIntegration: false,
         contextIsolation: true,
         webSecurity: true,
         webviewTag: true,
+        devTools: true,
       }
 
     });
-    //For loading the UI
-    this.mainWindow.loadURL('http://localhost:5173');
+    if (app.isPackaged) {
+      // Production: Load built HTML file
+      this.mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+      this.mainWindow.webContents.on('before-input-event',(event,input)=>{
+        if(input.key === 'F12'){
+          this.mainWindow.webContents.openDevTools();
+        }
+      });
+    } else {
+      // Development: Load Vite dev server
+      this.mainWindow.loadURL('http://localhost:5173');
+    }
 
     //If dev mode is enabled then open the dev tools
     if (this.isDevMode) {
@@ -171,7 +182,7 @@ class SurfaceBrowser {
     });
 
     ipcMain.handle('add-bookmark', (event, tabData) => {
-      const savedBookmark =  surfaceBrowser.bookmarkManager.saveBookmarkTab(tabData);
+      const savedBookmark = surfaceBrowser.bookmarkManager.saveBookmarkTab(tabData);
       return savedBookmark;
     });
 
@@ -179,9 +190,9 @@ class SurfaceBrowser {
       return surfaceBrowser.bookmarkManager.loadBookmarkTabs();
     })
 
-    ipcMain.handle('delete-bookmark',(event, bookmarkId)=>{
+    ipcMain.handle('delete-bookmark', (event, bookmarkId) => {
       const success = surfaceBrowser.bookmarkManager.deleteBookmark(bookmarkId);
-      return {success, bookmarkId};
+      return { success, bookmarkId };
     });
   }
 }
