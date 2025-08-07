@@ -1,0 +1,53 @@
+#When Should this run
+name: Release Surface Browser Desktop
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js env
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.15.0'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Extract Build Information
+        id: build_info
+        run: |
+          $tagName = "${{ github.ref_name }}"
+          $versionInfo = $tagName -replace '^v',''
+          $isPrerelease = $tagName -match 'alpha|beta'
+
+          echo "tagName=$tagName" >> $env:GITHUB_OUTPUT
+          echo "version=$versionInfo" >> $env:GITHUB_OUTPUT
+          echo "isPrerelease=$isPrerelease" >> $env:GITHUB_OUTPUT
+
+      - name: Package.json File Updater
+        run: |
+          $version = "${{ steps.build_info.outputs.version }}"
+          npm version $version --no-git-tag-version
+
+      - name: Create the build and installer files
+        run: npm run build:win
+
+      - name: Github release action
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "${{ steps.build_info.outputs.tagName }}"
+          name: "Surface Browser ${{ steps.build_info.outputs.tagName}}"
+          prerelease: "${{ steps.build_info.outputs.isPrerelease }}"
+          generate_release_notes: true
+          files: |
+            dist/Surface Browser Setup ${{ steps.build_info.outputs.version }}.exe
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
