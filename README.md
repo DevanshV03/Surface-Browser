@@ -4,7 +4,6 @@ A modern, feature-rich desktop web browser built with Electron and React, design
 
 ![Surface Browser](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## 🚀 Features
 
