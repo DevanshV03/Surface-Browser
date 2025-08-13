@@ -5,6 +5,9 @@ import { TIMEOUTS, DEFAULT_TAB_DATA, ICON_URLS } from './config/constants';
 import { NavigationService } from './services/navigationService';
 import { LoadingService } from './services/loadingService';
 import { UIService } from './services/uiService';
+import { HistoryService } from './services/HistoryService';
+import { FaviconService } from './services/faviconService';
+
 
 // Surface Browser - URL Navigation and Web Engine
 class SurfaceBrowserRenderer {
@@ -16,6 +19,8 @@ class SurfaceBrowserRenderer {
     this.navigationService = new NavigationService(this);
     this.loadingService = new LoadingService(this);
     this.uiService = new UIService(this);
+    this.historyService = new HistoryService(this);
+    this.faviconService = new FaviconService();
     this.init();
   }
 
@@ -25,6 +30,7 @@ class SurfaceBrowserRenderer {
     this.handleBookmark();
     this.uiService.mountReactComponents();
     this.initializeDefaultTab();
+    this.setupWelcomeScreenActions();
   }
 
   initializeDefaultTab() {
@@ -107,31 +113,31 @@ class SurfaceBrowserRenderer {
 
 
 
-handleBookmark() {
-  const bookmarkBtn = safeGetElement(DOMElements.bookmarkBtn,'bookmark-btn');
+  handleBookmark() {
+    const bookmarkBtn = safeGetElement(DOMElements.bookmarkBtn, 'bookmark-btn');
 
-  if (bookmarkBtn) {
-    bookmarkBtn.addEventListener("click", async () => {
-      console.log("bookmark button clicked");
-      const tabData = {
-        url: this.currentTabData.url,
-        title: this.currentTabData.title,
-        favicon: this.currentTabData.favicon
-      };
+    if (bookmarkBtn) {
+      bookmarkBtn.addEventListener("click", async () => {
+        console.log("bookmark button clicked");
+        const tabData = {
+          url: this.currentTabData.url,
+          title: this.currentTabData.title,
+          favicon: this.currentTabData.favicon
+        };
 
-      const savedBookmark = await window.electronAPI.addBookmark(tabData);
-      
-      if (savedBookmark) {
-        window.dispatchEvent(new CustomEvent('bookmarkAdded', { 
-          detail: savedBookmark 
-        }));
-        console.log("Bookmark added and event dispatched:", savedBookmark);
-      } else {
-        console.log("Bookmark already exists - no event dispatched");
-      }
-    });
+        const savedBookmark = await window.electronAPI.addBookmark(tabData);
+
+        if (savedBookmark) {
+          window.dispatchEvent(new CustomEvent('bookmarkAdded', {
+            detail: savedBookmark
+          }));
+          console.log("Bookmark added and event dispatched:", savedBookmark);
+        } else {
+          console.log("Bookmark already exists - no event dispatched");
+        }
+      });
+    }
   }
-}
 
 
   // Handle new tab creation
@@ -181,6 +187,13 @@ handleBookmark() {
             // Update React tab state when navigating
             this.reactUpdateTab?.(tabId, { url: event.url });
           }
+          window.electronAPI?.addHistoryEntry({
+            url: event.url,
+            title: this.currentTabData?.title || 'Loading...',
+            timestamp: Date.now(),
+            favicon: this.currentTabData?.favicon || DEFAULT_TAB_DATA.FAVICON
+          });
+          window.dispatchEvent(new CustomEvent('historyUpdated'));
           this.updateUrlBar(event.url);
           this.navigationService.NavigationUpdater();
         }
@@ -196,6 +209,13 @@ handleBookmark() {
 
             this.reactUpdateTab?.(tabId, { url: event.url });
           }
+          window.electronAPI?.addHistoryEntry({
+            url: event.url,
+            title: this.currentTabData?.title || 'Loading...',
+            timestamp: Date.now(),
+            favicon: this.currentTabData?.favicon || DEFAULT_TAB_DATA.FAVICON
+          });
+          window.dispatchEvent(new CustomEvent('historyUpdated'));
           this.updateUrlBar(event.url);
           this.navigationService.NavigationUpdater();
         }
@@ -212,44 +232,20 @@ handleBookmark() {
         }
       });
 
-      webview.addEventListener('dom-ready', () => {
+      webview.addEventListener('dom-ready', async() => {
         if (this.activeWebview === webview) {
           console.log('Page loaded successfully for tab:', tabId);
 
 
-          setTimeout(() => {
-            try {
-              const url = new URL(webview.src);
-              const possibleFavicons = [
-                `${url.origin}/${ICON_URLS.ICO_URL}`,
-                `${url.origin}/${ICON_URLS.PNG_URL}`,
-                `${url.origin}/${ICON_URLS.APPLE_PNG_URL}`,
-                `${url.origin}/${ICON_URLS.ANDROID_PNG_URL}`
-              ];
+          const faviconUrl = await this.faviconService.getFaviconUrl(webview.src);
+          if(this.currentTabData){
+            this.currentTabData = {
+              ...this.currentTabData,
+              favicon: faviconUrl
+            };
+            this.reactUpdateTab?.(tabId,{favicon: faviconUrl});
+          }
 
-              // Use the first favicon URL (most sites have /favicon.ico)
-              const faviconUrl = possibleFavicons[0];
-              console.log('Using favicon URL:', faviconUrl);
-
-              if (this.currentTabData) {
-                this.currentTabData = {
-                  ...this.currentTabData,
-                  favicon: faviconUrl
-                };
-                this.reactUpdateTab?.(tabId, { favicon: faviconUrl });
-                console.log('Updated favicon in currentTabData');
-              }
-            } catch (error) {
-              console.log('could not find favicon, error:', error);
-              if (this.currentTabData) {
-                this.currentTabData = {
-                  ...this.currentTabData,
-                  favicon: DEFAULT_TAB_DATA.FAVICON
-                };
-                this.reactUpdateTab?.(tabId, { favicon: DEFAULT_TAB_DATA.FAVICON });
-              }
-            }
-          }, TIMEOUTS.HIGH_TIMEOUT);
           this.navigationService.NavigationUpdater();
         }
       });
@@ -388,6 +384,32 @@ handleBookmark() {
         window.electronAPI?.closeWindow();
       });
     }
+  }
+
+  setupWelcomeScreenActions() {
+    const historyAction = document.querySelector('.quick-link[data-action = "history"]');
+    const downloadsAction = document.querySelector('.quick-link[data-action = "downloads"]');
+    const settingsAction = document.querySelector('.quick-link[data-action = "settings"]');
+
+    if (historyAction) {
+      historyAction.addEventListener("click", () => {
+        this.historyService.openHistoryPanel();
+      });
+    }
+    if (downloadsAction) {
+      downloadsAction.addEventListener("click", () => {
+        console.log("Downloads button clicked on welcome screen");
+      });
+    }
+    if (settingsAction) {
+      settingsAction.addEventListener("click", () => {
+        console.log("Settings button clicked on welcome screen");
+      });
+    }
+  }
+
+  addTabToHistory() {
+
   }
 
 }

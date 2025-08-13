@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('electronAPI',{
     addBookmark: (tabData) => ipcRenderer.invoke('add-bookmark', tabData),
     loadBookmarks: () => ipcRenderer.invoke('load-bookmarks'),
     deleteBookmark: (bookmarkId)=> ipcRenderer.invoke('delete-bookmark', bookmarkId),
+    addHistoryEntry: (historyData) => ipcRenderer.invoke('addHistoryEntry', historyData),
+    loadHistoryData: (limit) => ipcRenderer.invoke('loadHistoryData', limit),
 
     //Getting system information
     platform: process.platform,

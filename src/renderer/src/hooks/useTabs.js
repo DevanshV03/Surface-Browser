@@ -97,7 +97,20 @@ function useTabs(callbacks = {}) {
             )
         );
     };
-
+    useEffect(() => {
+    window.surfaceBrowserTabActions = {
+        addTab: addTab,
+        removeTab: (tabId) => removeTab(tabId || activeTabId),
+        switchToTab: switchToTab,
+        getActiveTabId: () => activeTabId,
+        getAllTabs: () => tabs
+    };
+    
+    // Cleanup on unmount
+    return () => {
+        delete window.surfaceBrowserTabActions;
+    };
+}, [addTab, removeTab, switchToTab, activeTabId, tabs]);
     return [tabs, activeTabId, addTab, removeTab, switchToTab, updateTab, switchToExternalTab];
 }
 

@@ -12,8 +12,7 @@ export const DEFAULT_TAB_DATA = {
 }
 
 export const ICON_URLS = {
-    ICO_URL: 'favicon.ico',
-    PNG_URL: 'favicon.png',
-    APPLE_PNG_URL: 'apple-touch-icon.png',
-    ANDROID_PNG_URL: 'android-chrome-192x192.png'
+    PRIMARY: 'https://www.google.com/s2/favicons',
+    FALLBACK: 'https://favicons.githubusercontent.com',
+    SIZE: 32
 }

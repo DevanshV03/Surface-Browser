@@ -1,6 +1,8 @@
 const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const path = require('node:path');
 const fs = require('fs');
+const Database = require('better-sqlite3');
+
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -51,12 +53,52 @@ class BookmarkManager {
   }
 }
 
+class HistoryStorage {
+  constructor() {
+    this.db = new Database(path.join(app.getPath('userData'), 'history.db'));
+    this.initializeDatabase();
+  }
+
+  initializeDatabase() {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS history_visits(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      url TEXT NOT NULL,
+      title TEXT,
+      favicon TEXT,
+      visit_time INTEGER NOT NULL,
+      visit_count INTEGER DEFAULT 1
+      )
+      `);
+  }
+
+  addVisit(visitData) {
+    const stmt = this.db.prepare(`
+    INSERT OR REPLACE INTO history_visits (url, title, favicon, visit_time, visit_count)
+    VALUES (?, ?, ?, ?, 1)
+  `);
+    return stmt.run(visitData.url, visitData.title, visitData.favicon, visitData.timestamp);
+  }
+
+  async loadHistoryData(limit = 50) {
+    const stmt = this.db.prepare(`
+    SELECT url, title, favicon, visit_time 
+    FROM history_visits 
+    ORDER BY visit_time DESC 
+    LIMIT ?
+    `)
+    return stmt.all(limit);
+  }
+
+}
+
 class SurfaceBrowser {
   // Checks for the development environment
   constructor() {
     this.mainWindow = null;
     this.isDevMode = process.argv.includes('--dev') || !app.isPackaged;
     this.bookmarkManager = new BookmarkManager();
+    this.historyStorage = new HistoryStorage();
   }
 
   createMainWindow() {
@@ -93,8 +135,8 @@ class SurfaceBrowser {
     if (app.isPackaged) {
       // Production: Load built HTML file
       this.mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
-      this.mainWindow.webContents.on('before-input-event',(event,input)=>{
-        if(input.key === 'F12'){
+      this.mainWindow.webContents.on('before-input-event', (event, input) => {
+        if (input.key === 'F12') {
           this.mainWindow.webContents.openDevTools();
         }
       });
@@ -134,29 +176,116 @@ class SurfaceBrowser {
     return this.mainWindow;
   }
 
-  setupApplicationMenu() {
-    // Remove default menu for cleaner look (like Arc/Zen)
-    if (process.platform !== 'darwin') {
-      Menu.setApplicationMenu(null);
-    } else {
-      // macOS requires a menu, so create minimal one
-      const template = [
+setupApplicationMenu() {
+  const template = [
+    {
+      label: 'File',
+      submenu: [
         {
-          label: 'Surface Browser',
-          submenu: [
-            { role: 'about' },
-            { type: 'separator' },
-            { role: 'hide' },
-            { role: 'hideothers' },
-            { role: 'unhide' },
-            { type: 'separator' },
-            { role: 'quit' }
-          ]
-        }
-      ];
-      Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+          label: 'New Tab',
+          accelerator: 'CmdOrCtrl+T',
+          click: () => {
+            this.mainWindow.webContents.executeJavaScript(`
+              if (window.surfaceBrowserTabActions) {
+                window.surfaceBrowserTabActions.addTab();
+              }
+            `);
+          }
+        },
+        {
+          label: 'Close Tab',
+          accelerator: 'CmdOrCtrl+W',
+          click: () => {
+            this.mainWindow.webContents.executeJavaScript(`
+              if (window.surfaceBrowserTabActions) {
+                const activeTabId = window.surfaceBrowserTabActions.getActiveTabId();
+                const allTabs = window.surfaceBrowserTabActions.getAllTabs();
+                if (allTabs.length > 1) {
+                  window.surfaceBrowserTabActions.removeTab(activeTabId);
+                }
+              }
+            `);
+          }
+        },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        {
+          label: 'History',
+          accelerator: 'CmdOrCtrl+H',
+          click: () => {
+            this.mainWindow.webContents.executeJavaScript(`
+              if (window.surfaceBrowser && window.surfaceBrowser.historyService) {
+                window.surfaceBrowser.historyService.isHistoryPanelOpen 
+                  ? window.surfaceBrowser.historyService.closeHistoryPanel()
+                  : window.surfaceBrowser.historyService.openHistoryPanel();
+              }
+            `);
+          }
+        },
+        {
+          label: 'Focus Address Bar',
+          accelerator: 'CmdOrCtrl+L',
+          click: () => {
+            this.mainWindow.webContents.executeJavaScript(`
+              const urlInput = document.getElementById('url-input');
+              if (urlInput) {
+                urlInput.focus();
+                urlInput.select();
+              }
+            `);
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Reload Page',
+          accelerator: 'CmdOrCtrl+R',
+          click: () => {
+            // Refresh the webview
+            this.mainWindow.webContents.executeJavaScript(`
+              if (window.surfaceBrowser && window.surfaceBrowser.activeWebview) {
+                console.log('Reloading active webview...');
+                window.surfaceBrowser.activeWebview.reload();
+              } else {
+                console.log('No active webview to reload');
+              }
+            `);
+          }
+        },
+        {
+          label: 'Hard Reload',
+          accelerator: 'CmdOrCtrl+Shift+R',
+          click: () => {
+            //Hard Refresh
+            this.mainWindow.webContents.executeJavaScript(`
+              if (window.surfaceBrowser && window.surfaceBrowser.activeWebview) {
+                console.log('Hard reloading active webview...');
+                window.surfaceBrowser.activeWebview.reloadIgnoringCache();
+              } else {
+                console.log('No active webview to hard reload');
+              }
+            `);
+          }
+        },
+        { type: 'separator' },
+        { role: 'toggleDevTools' }
+      ]
     }
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+  
+  if (process.platform !== 'darwin') {
+    this.mainWindow.setMenuBarVisibility(false);
   }
+}
+
+
   setupIpcHandlers() {
     ipcMain.handle('window-minimize', () => {
       if (this.mainWindow) {
@@ -194,6 +323,13 @@ class SurfaceBrowser {
       const success = surfaceBrowser.bookmarkManager.deleteBookmark(bookmarkId);
       return { success, bookmarkId };
     });
+
+    ipcMain.handle('addHistoryEntry', async (event, historyData) => {
+      return this.historyStorage.addVisit(historyData);
+    });
+    ipcMain.handle('loadHistoryData', async (event, limit) => {
+      return this.historyStorage.loadHistoryData(limit);
+    });
   }
 }
 
@@ -202,9 +338,9 @@ const surfaceBrowser = new SurfaceBrowser();
 
 // App event handlers
 app.whenReady().then(() => {
-  surfaceBrowser.setupApplicationMenu();
   surfaceBrowser.setupIpcHandlers();
   surfaceBrowser.createMainWindow();
+  surfaceBrowser.setupApplicationMenu();
 });
 
 app.on('activate', () => {
