@@ -1,8 +1,15 @@
-const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, clipboard } = require('electron');
 const path = require('node:path');
+/*eslint-disable*/
 const fs = require('fs');
 const Database = require('better-sqlite3');
-
+const OAUTH_PATTERNS = {
+  OAUTH: '/oauth',
+  OAUTH2: '/oauth2',
+  AUTHORIZE: '/authorize',
+  AUTH: '/auth',
+  LOGIN: '/login/oauth'
+};
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -132,6 +139,23 @@ class SurfaceBrowser {
       }
 
     });
+    this.mainWindow.webContents.setWindowOpenHandler((details) => {
+      console.log('Global window open:', details.url);
+
+      // renderer handles it via IPC
+      this.mainWindow.webContents.executeJavaScript(`
+        if (window.surfaceBrowser && window.surfaceBrowser.popupService) {
+          const event = {
+            url: '${details.url}',
+            disposition: '${details.disposition || 'new-window'}',
+            preventDefault: () => {}
+          };
+          window.surfaceBrowser.popupService.handleNewWindow(event);
+        }
+      `);
+
+      return { action: 'deny' };
+    });
     if (app.isPackaged) {
       // Production: Load built HTML file
       this.mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
@@ -176,27 +200,162 @@ class SurfaceBrowser {
     return this.mainWindow;
   }
 
-setupApplicationMenu() {
-  const template = [
-    {
-      label: 'File',
-      submenu: [
-        {
-          label: 'New Tab',
-          accelerator: 'CmdOrCtrl+T',
-          click: () => {
-            this.mainWindow.webContents.executeJavaScript(`
+  createOAuthPopup(url, options = {}) {
+    try {
+      console.log('Creating OAuth popup for:', url);
+
+      const popupWindow = new BrowserWindow({
+        width: 500,
+        height: 700,
+        parent: this.mainWindow,
+        frame: true,
+        modal: false,
+        titleBarStyle: 'default',
+        alwaysOnTop: true,
+        center: true,
+        show: true,
+        resizable: false,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+          webSecurity: true
+        }
+      });
+
+      popupWindow.loadURL(url);
+
+      const timeout = setTimeout(() => {
+        if (!popupWindow.isDestroyed()) {
+          console.log('OAuth popup timed out after 5 minutes');
+          this.showInBrowserNotification('OAuth login timed out', 'warning');
+          popupWindow.close();
+        }
+      }, 300000);
+      popupWindow.on('closed', () => {
+        clearTimeout(timeout);
+        console.log('OAuth popup closed, timeout cleared');
+    });
+
+      // Setup postMessage listener for OAuth completion
+      popupWindow.webContents.on('did-finish-load', () => {
+        popupWindow.webContents.executeJavaScript(`
+          window.addEventListener('message', (event) => {
+            console.log('OAuth message received:', event);
+            
+            if (event.data && (event.data.type === 'oauth' || event.data.access_token)) {
+              console.log('OAUTH_SUCCESS via postMessage');
+              
+              window.postMessage({
+                type: 'OAUTH_COMPLETE',
+                data: event.data,
+                origin: event.origin
+              });
+            }
+          });
+        `);
+      });
+
+      // Listen for OAuth completion via URL navigation
+      popupWindow.webContents.on('did-navigate', (event, navigationUrl) => {
+        console.log('Popup navigated to:', navigationUrl);
+
+        if (this.isOAuthCallback(navigationUrl)) {
+          console.log('OAuth completed successfully');
+
+          // Show in-browser notification instead of system notification
+          this.showInBrowserNotification('OAuth authentication completed successfully!', 'success');
+
+          // Notify main window
+          this.mainWindow.webContents.send('oauth-success', {
+            url: navigationUrl,
+            timestamp: Date.now()
+          });
+
+          // Auto-close popup after 1 second
+          setTimeout(() => {
+            if (!popupWindow.isDestroyed()) {
+              popupWindow.close();
+            }
+          }, 1000);
+        }
+      });
+
+      console.log('OAuth popup created successfully');
+      return popupWindow;
+    } catch (error) {
+      console.error("Failed to create popup window", error);
+      throw error;
+    }
+  }
+
+  isOAuthCallback(url) {
+    try {
+      // Only detect COMPLETION patterns, not initial OAuth URLs
+      const callbackPatterns = [
+        '/oauth/callback',
+        '/auth/callback',
+        '/oauth2/callback',
+        '/login/callback'
+      ];
+
+      // OAuth completion URL parameters (tokens/codes received)
+      const completionParams = [
+        'code=',           // Authorization code received
+        'access_token=',   // Direct token received  
+        'error=',          // OAuth error received
+        'state='           // OAuth state parameter (callback indicator)
+      ];
+
+      // Must have BOTH callback path AND completion parameters
+      const hasCallbackPath = callbackPatterns.some(pattern => url.includes(pattern));
+      const hasCompletionParam = completionParams.some(param => url.includes(param));
+
+      return hasCallbackPath || hasCompletionParam;
+    } catch (error) {
+      console.error('Error checking OAuth callback:', error);
+      return false;
+    }
+  }
+
+
+  // Helper method - add this after isOAuthCallback
+  showInBrowserNotification(message, type = 'info') {
+    try {
+      // Send notification to renderer process to display in browser UI
+      this.mainWindow.webContents.executeJavaScript(`
+        if (window.surfaceBrowser && window.surfaceBrowser.showNotification) {
+          window.surfaceBrowser.showNotification('${message}', '${type}');
+        } else {
+          console.log('${type.toUpperCase()}: ${message}');
+        }
+      `);
+    } catch (error) {
+      console.error('Failed to show in-browser notification:', error);
+    }
+  }
+
+
+  setupApplicationMenu() {
+    const template = [
+      {
+        label: 'File',
+        submenu: [
+          {
+            label: 'New Tab',
+            accelerator: 'CmdOrCtrl+T',
+            click: () => {
+              this.mainWindow.webContents.executeJavaScript(`
               if (window.surfaceBrowserTabActions) {
                 window.surfaceBrowserTabActions.addTab();
               }
             `);
-          }
-        },
-        {
-          label: 'Close Tab',
-          accelerator: 'CmdOrCtrl+W',
-          click: () => {
-            this.mainWindow.webContents.executeJavaScript(`
+            }
+          },
+          {
+            label: 'Close Tab',
+            accelerator: 'CmdOrCtrl+W',
+            click: () => {
+              this.mainWindow.webContents.executeJavaScript(`
               if (window.surfaceBrowserTabActions) {
                 const activeTabId = window.surfaceBrowserTabActions.getActiveTabId();
                 const allTabs = window.surfaceBrowserTabActions.getAllTabs();
@@ -205,48 +364,48 @@ setupApplicationMenu() {
                 }
               }
             `);
-          }
-        },
-        { type: 'separator' },
-        { role: 'quit' }
-      ]
-    },
-    {
-      label: 'View',
-      submenu: [
-        {
-          label: 'History',
-          accelerator: 'CmdOrCtrl+H',
-          click: () => {
-            this.mainWindow.webContents.executeJavaScript(`
+            }
+          },
+          { type: 'separator' },
+          { role: 'quit' }
+        ]
+      },
+      {
+        label: 'View',
+        submenu: [
+          {
+            label: 'History',
+            accelerator: 'CmdOrCtrl+H',
+            click: () => {
+              this.mainWindow.webContents.executeJavaScript(`
               if (window.surfaceBrowser && window.surfaceBrowser.historyService) {
                 window.surfaceBrowser.historyService.isHistoryPanelOpen 
                   ? window.surfaceBrowser.historyService.closeHistoryPanel()
                   : window.surfaceBrowser.historyService.openHistoryPanel();
               }
             `);
-          }
-        },
-        {
-          label: 'Focus Address Bar',
-          accelerator: 'CmdOrCtrl+L',
-          click: () => {
-            this.mainWindow.webContents.executeJavaScript(`
+            }
+          },
+          {
+            label: 'Focus Address Bar',
+            accelerator: 'CmdOrCtrl+L',
+            click: () => {
+              this.mainWindow.webContents.executeJavaScript(`
               const urlInput = document.getElementById('url-input');
               if (urlInput) {
                 urlInput.focus();
                 urlInput.select();
               }
             `);
-          }
-        },
-        { type: 'separator' },
-        {
-          label: 'Reload Page',
-          accelerator: 'CmdOrCtrl+R',
-          click: () => {
-            // Refresh the webview
-            this.mainWindow.webContents.executeJavaScript(`
+            }
+          },
+          { type: 'separator' },
+          {
+            label: 'Reload Page',
+            accelerator: 'CmdOrCtrl+R',
+            click: () => {
+              // Refresh the webview
+              this.mainWindow.webContents.executeJavaScript(`
               if (window.surfaceBrowser && window.surfaceBrowser.activeWebview) {
                 console.log('Reloading active webview...');
                 window.surfaceBrowser.activeWebview.reload();
@@ -254,14 +413,14 @@ setupApplicationMenu() {
                 console.log('No active webview to reload');
               }
             `);
-          }
-        },
-        {
-          label: 'Hard Reload',
-          accelerator: 'CmdOrCtrl+Shift+R',
-          click: () => {
-            //Hard Refresh
-            this.mainWindow.webContents.executeJavaScript(`
+            }
+          },
+          {
+            label: 'Hard Reload',
+            accelerator: 'CmdOrCtrl+Shift+R',
+            click: () => {
+              //Hard Refresh
+              this.mainWindow.webContents.executeJavaScript(`
               if (window.surfaceBrowser && window.surfaceBrowser.activeWebview) {
                 console.log('Hard reloading active webview...');
                 window.surfaceBrowser.activeWebview.reloadIgnoringCache();
@@ -269,21 +428,21 @@ setupApplicationMenu() {
                 console.log('No active webview to hard reload');
               }
             `);
-          }
-        },
-        { type: 'separator' },
-        { role: 'toggleDevTools' }
-      ]
-    }
-  ];
+            }
+          },
+          { type: 'separator' },
+          { role: 'toggleDevTools' }
+        ]
+      }
+    ];
 
-  const menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
-  
-  if (process.platform !== 'darwin') {
-    this.mainWindow.setMenuBarVisibility(false);
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
+
+    if (process.platform !== 'darwin') {
+      this.mainWindow.setMenuBarVisibility(false);
+    }
   }
-}
 
 
   setupIpcHandlers() {
@@ -329,6 +488,27 @@ setupApplicationMenu() {
     });
     ipcMain.handle('loadHistoryData', async (event, limit) => {
       return this.historyStorage.loadHistoryData(limit);
+    });
+    ipcMain.handle('copyUrl-clipboard', (event, url) => {
+      clipboard.writeText(url);
+    });
+    ipcMain.handle('create-oauth-popup', async (event, url, options = {}) => {
+      try {
+        const popup = this.createOAuthPopup(url, options);
+        return { success: true, popupId: popup.id }
+      } catch (error) {
+        console.error("IPC OAuth popup creation failed", error);
+        return { success: false, error: error.message }
+      }
+    });
+    ipcMain.handle('open-external', async (event, url) => {
+      const { shell } = require('electron');
+      try {
+        await shell.openExternal(url);
+        return { success: true };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
     });
   }
 }

@@ -16,3 +16,18 @@ export const ICON_URLS = {
     FALLBACK: 'https://favicons.githubusercontent.com',
     SIZE: 32
 }
+
+export const OAUTH_PROVIDERS ={
+    GOOGLE: 'accounts.google.com',
+    APPLE: 'appleid.apple.com',
+    GITHUB: 'github.com/login',
+    MICROSOFT: 'login.microsoftonline.com' 
+}
+
+export const OAUTH_PATTERNS = {
+    OAUTH: '/oauth',
+    OAUTH2: '/oauth2',
+    AUTHORIZE: '/authorize',
+    AUTH: '/auth',
+    LOGIN: '/login/oauth'
+}

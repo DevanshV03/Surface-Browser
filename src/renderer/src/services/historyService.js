@@ -9,6 +9,7 @@ export class HistoryService{
             detail: {isOpen: this.isHistoryPanelOpen}
         }));
     }
+    
 
     openHistoryPanel(){
         this.isHistoryPanelOpen = true;

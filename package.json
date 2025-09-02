@@ -1,7 +1,7 @@
 {
   "name": "surface-browser",
   "version": "1.0.0",
-  "description": "Your modern web browsing partner while surfing the web",
+  "description": "Surface Browser",
   "main": "./out/main/index.js",
   "author": "Devansh Verma",
   "homepage": "https://github.com/DevanshV03/Surface-Browser",

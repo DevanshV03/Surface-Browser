@@ -1,4 +1,5 @@
 import { DOMElements,safeGetElement } from "../utils/domUtils";
+/*eslint-disable*/
 export class NavigationService{
     constructor(surfaceBrowser){
         this.browser = surfaceBrowser;
@@ -57,7 +58,7 @@ export class NavigationService{
                     forwardBtn.disabled = !this.browser.activeWebview.canGoForward();
                 }          
             }
-        }catch(error){
+        }catch{
             if(backButton) backButton.disabled = true;
             if(forwardBtn) forwardBtn.disabled = true;
         }

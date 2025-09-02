@@ -4,9 +4,10 @@ import { DOMElements, safeGetElement } from './utils/domUtils';
 import { TIMEOUTS, DEFAULT_TAB_DATA, ICON_URLS } from './config/constants';
 import { NavigationService } from './services/navigationService';
 import { LoadingService } from './services/loadingService';
-import { UIService } from './services/uiService';
+import { UIService } from './services/UIService';
 import { HistoryService } from './services/HistoryService';
 import { FaviconService } from './services/faviconService';
+import { PopupService } from './services/popupService';
 
 
 // Surface Browser - URL Navigation and Web Engine
@@ -21,6 +22,7 @@ class SurfaceBrowserRenderer {
     this.uiService = new UIService(this);
     this.historyService = new HistoryService(this);
     this.faviconService = new FaviconService();
+    this.PopupService = new PopupService();
     this.init();
   }
 
@@ -174,6 +176,7 @@ class SurfaceBrowserRenderer {
       webview.src = tabData?.url || '';
       webview.id = tabData?.webviewId || `webview-${tabId}`;
 
+      webview.setAttribute('allowpopups', 'true');
       // Add event listeners for this specific webview
       webview.addEventListener('did-navigate', (event) => {
         if (this.activeWebview === webview) {
@@ -230,6 +233,7 @@ class SurfaceBrowserRenderer {
             }
           }
         }
+        this.reactUpdateTab?.(tabId,{title: event.title});
       });
 
       webview.addEventListener('dom-ready', async() => {
@@ -313,6 +317,7 @@ class SurfaceBrowserRenderer {
         // Update current tab data with the new URL
         this.currentTabData = {
           ...this.currentTabData,
+          
           url: url
         };
 
@@ -408,9 +413,6 @@ class SurfaceBrowserRenderer {
     }
   }
 
-  addTabToHistory() {
-
-  }
 
 }
 

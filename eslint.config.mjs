@@ -24,7 +24,15 @@ export default [
     },
     rules: {
       ...eslintPluginReactHooks.configs.recommended.rules,
-      ...eslintPluginReactRefresh.configs.vite.rules
+      ...eslintPluginReactRefresh.configs.vite.rules,
+      'no-unused-vars': 'warn',
+      'no-undef': 'warn',
+      'prefer-const': 'warn',
+      'no-var': 'warn',
+      'react/prop-types': 'off',
+      'react/react-in-jsx-scope': 'off',
+      'react/jsx-uses-react': 'off',
+      'react/jsx-uses-vars': 'warn'
     }
   },
   eslintConfigPrettier

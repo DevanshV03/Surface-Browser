@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { DEFAULT_TAB_DATA } from "../config/constants";
+/*eslint-disable*/
 
 function useTabs(callbacks = {}) {
     const [tabs, setTabs] = useState([{
